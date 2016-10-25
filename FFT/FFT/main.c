@@ -8,25 +8,59 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "fftw-3.3.5/api/fftw3.h"
+#include "kiss_fft.h"
+#include "kiss_fftr.h"
+//#include "libsndfile-1.0.27/src/sndfile.h"
 
-#define WIN 32
+#define WIN 512
 
-int main(int argc, const char * argv[]) {
-    int inputSize = 1024;
-    int outputSize = ((inputSize >> 1) + 1);
+int main(void)
+{
+    char *music_file = "/Users/IronFactory/Desktop/bobby.mp3";
+    FILE *in = fopen(music_file, "rb");
+    char buf[WIN * 2];
+    int nfft = WIN, i, fx;
+    double intensity = 0;
+    kiss_fft_cfg cfg;
+    kiss_fft_cpx cx_in[WIN];
+    kiss_fft_cpx cx_out[WIN];
+    short *sh;
     
-    double *inputBuffer = (double *) (fftw_malloc(inputSize * sizeof(double)));
-    fftw_complex *outputBuffer = (fftw_complex *) (fftw_malloc(outputSize * sizeof(fftw_complex)));
+    cfg = kiss_fft_alloc(nfft, 0, 0, 0);
+    if (!in) {
+        printf("unable to open file: %s\n", music_file);
+        perror("Error");
+        return 1;
+    }
+    fx = 0;
+    while (fread(buf, 1, WIN << 1, in))
+    {
+        for (i = 0;i<WIN;i++) {
+            sh = (short *)(buf + i * 2);
+            cx_in[i].r = (float) (((double)*sh) / 32768.0);
+            cx_in[i].i = 0.0;
+        }
+        
+        kiss_fft(cfg, cx_in, cx_out);
+        //Display the value of a position
+        int position;
+        
+        for (position = 0; position < WIN; position++) {
+            // 강도 , M
+            intensity = sqrt(pow(cx_out[position].r, 2) + pow(cx_out[position].i, 2));
+            double phase = atan(cx_out[position].i / cx_out[position].r);
+            int j;
+            for (j = 0; j < (int) intensity; j++) {
+                printf("*");
+            }
+            if (j > 0) {
+                printf("\n");
+            }
+//            printf("inten = %9.4f\n", intensity);
+        }
+//        printf("phase = %9.4f\n", phase);
+        
+    }
     
-    int flags = FFTW_ESTIMATE;
-    fftw_plan plan = fftw_plan_dft_r2c_1d(inputSize, inputBuffer, outputBuffer, flags);
-    fftw_execute(plan);
-    
-    printf("%d\n", sizeof(outputBuffer) / sizeof(outputBuffer[0]));
-    
-    fftw_free(inputBuffer);
-    fftw_free(outputBuffer);
-    fftw_destroy_plan(plan);
     return 0;
 }
