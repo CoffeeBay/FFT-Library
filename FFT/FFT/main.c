@@ -13,6 +13,7 @@
 //#include "libsndfile-1.0.27/src/sndfile.h"
 
 #define WIN 512
+#define READ_SIZE 16
 
 int main(void)
 {
@@ -33,7 +34,9 @@ int main(void)
         return 1;
     }
     fx = 0;
-    while (fread(buf, 1, WIN << 1, in))
+    int count = 0;
+    int zeroCount = 0;
+    while (fread(buf, 1, READ_SIZE << 1, in))
     {
         for (i = 0;i<WIN;i++) {
             sh = (short *)(buf + i * 2);
@@ -49,18 +52,24 @@ int main(void)
             // 강도 , M
             intensity = sqrt(pow(cx_out[position].r, 2) + pow(cx_out[position].i, 2));
             double phase = atan(cx_out[position].i / cx_out[position].r);
+            
             int j;
             for (j = 0; j < (int) intensity; j++) {
                 printf("*");
             }
             if (j > 0) {
                 printf("\n");
+            } else {
+                zeroCount++;
             }
 //            printf("inten = %9.4f\n", intensity);
         }
+        count++;
 //        printf("phase = %9.4f\n", phase);
         
     }
+    printf("count = %d\n", count);
+    printf("zero = %d\n", zeroCount);
     
     return 0;
 }
